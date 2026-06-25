@@ -2220,18 +2220,25 @@ document.addEventListener("DOMContentLoaded", () => {
         openModal(elements.modalGlobalVar);
     };
 
-    window.deleteGlobalVar = async (id, key) => {
-        if (!confirm(`Are you sure you want to delete the variable '{{${key}}}'?`)) return;
-        showOverlay("Deleting variable...");
-        try {
-            await axios.delete(`${API_BASE}/api/global-variables/${id}`);
-            hideOverlay();
-            showToast("Variable deleted successfully.");
-            fetchGlobalVars();
-        } catch (err) {
-            hideOverlay();
-            showToast("Failed to delete variable", "error");
-        }
+    window.deleteGlobalVar = (id, key) => {
+        showConfirmModal({
+            title: "Confirm Removal",
+            message: `Are you sure you want to delete the variable '{{${key}}}'? APIs using this variable may stop working.`,
+            confirmText: "Delete",
+            onConfirm: async () => {
+                closeModal(elements.modalConfirm);
+                showOverlay("Deleting variable...");
+                try {
+                    await axios.delete(`${API_BASE}/api/global-variables/${id}`);
+                    hideOverlay();
+                    showToast("Variable deleted successfully.");
+                    fetchGlobalVars();
+                } catch (err) {
+                    hideOverlay();
+                    showToast("Failed to delete variable", "error");
+                }
+            }
+        });
     };
 
     elements.btnGlobalVarSave.addEventListener("click", async () => {
