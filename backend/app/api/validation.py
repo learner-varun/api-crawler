@@ -6,11 +6,13 @@ from backend.app.database.connection import get_db
 from backend.app.models.models import ExecutionHistory, Environment, API, BaselineBackup, ComplexAPI
 from backend.app.schemas.schemas import ExecutionHistoryResponse
 from backend.app.services.validation_service import execute_validation
+from backend.app.utils.logger import get_logger
 import os
 import json
 import requests as http_requests
 
 router = APIRouter(prefix="/validate", tags=["Validation Engine"])
+logger = get_logger("validation_api")
 
 class ValidationRequest(BaseModel):
     environment_id: int
@@ -27,9 +29,10 @@ def trigger_validation(req: ValidationRequest, db: Session = Depends(get_db)):
             detail=str(e)
         )
     except Exception as e:
+        logger.error(f"Unexpected error in validation engine: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An unexpected error occurred during API validation: {str(e)}"
+            detail="Something went wrong in the Validation Engine. Please check server logs for details."
         )
 
 @router.get("/history", response_model=List[ExecutionHistoryResponse])

@@ -11,7 +11,10 @@ from backend.app.schemas.schemas import (
 )
 from backend.app.scheduler.scheduler import reschedule_all_jobs
 
+from backend.app.utils.logger import get_logger
+
 router = APIRouter(prefix="/settings", tags=["System Settings"])
+logger = get_logger("settings_api")
 
 @router.get("", response_model=SettingsResponse)
 def get_settings(db: Session = Depends(get_db)):
@@ -190,7 +193,8 @@ def clear_data(db: Session = Depends(get_db)):
         return {"message": "All application data cleared successfully."}
     except Exception as e:
         db.rollback()
+        logger.error(f"Failed to wipe application database: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred while wiping database data: {str(e)}"
+            detail="Something went wrong while wiping the application data. Please check server logs for details."
         )

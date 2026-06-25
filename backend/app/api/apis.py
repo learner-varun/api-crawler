@@ -6,7 +6,10 @@ from backend.app.models.models import API
 from backend.app.schemas.schemas import APICreate, APIUpdate, APIResponse, ImportPreviewResponse
 from backend.app.services.import_service import parse_and_validate_csv, commit_imported_apis
 
+from backend.app.utils.logger import get_logger
+
 router = APIRouter(prefix="/apis", tags=["API Registry"])
+logger = get_logger("apis_api")
 
 @router.get("", response_model=List[APIResponse])
 def get_apis(environment_id: Optional[int] = None, db: Session = Depends(get_db)):
@@ -179,7 +182,8 @@ def commit_csv_import(apis_list: List[APICreate], db: Session = Depends(get_db))
         commit_imported_apis(db, valid_rows, env_id)
         return {"message": f"Successfully imported {len(valid_rows)} APIs."}
     except Exception as e:
+        logger.error(f"Failed to import APIs: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred while importing APIs: {str(e)}"
+            detail="Something went wrong while importing APIs. Please check server logs for details."
         )

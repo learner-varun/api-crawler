@@ -9,7 +9,10 @@ from backend.app.models.models import BaselineBackup
 from backend.app.schemas.schemas import BaselineBackupResponse
 from backend.app.services.backup_service import create_baseline_backup
 
+from backend.app.utils.logger import get_logger
+
 router = APIRouter(prefix="/backup", tags=["Backups"])
+logger = get_logger("backups_api")
 
 class BackupRequest(BaseModel):
     environment_id: int
@@ -25,9 +28,10 @@ def trigger_backup(req: BackupRequest, db: Session = Depends(get_db)):
             detail=str(e)
         )
     except Exception as e:
+        logger.error(f"Unexpected error during baseline backup: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An unexpected error occurred during baseline backup: {str(e)}"
+            detail="Something went wrong during baseline backup. Please check server logs for details."
         )
 
 @router.get("", response_model=List[BaselineBackupResponse])
