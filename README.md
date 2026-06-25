@@ -129,11 +129,13 @@ graph TD
 *Place your application screenshots here for documentation reference:*
 
 #### 1. System Dashboard
-![System Dashboard]<img width="1437" height="671" alt="dashboard" src="https://github.com/user-attachments/assets/8ccd7d48-fdf5-470f-81f5-5a629bdc1b81" />
+<img width="1437" height="671" alt="dashboard" src="https://github.com/user-attachments/assets/8ccd7d48-fdf5-470f-81f5-5a629bdc1b81" />
 
 
 #### 2. Complex API Variable Extractions
-![Complex API Builder](docs/images/complex_api.png)
+<img width="1440" height="668" alt="complex_api" src="https://github.com/user-attachments/assets/b63b63e1-34c2-4284-bacc-565c3d3aaa38" />
+
 
 #### 3. Time-Slot Scheduler and Alerts
-![Alerts Settings](docs/images/settings_scheduler.png)
+<img width="920" height="265" alt="scheduler" src="https://github.com/user-attachments/assets/d9202496-948c-4fbc-8997-c19feed83f62" />
+
