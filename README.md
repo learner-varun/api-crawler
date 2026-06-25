@@ -129,7 +129,8 @@ graph TD
 *Place your application screenshots here for documentation reference:*
 
 #### 1. System Dashboard
-![System Dashboard](docs/images/dashboard.png)
+![System Dashboard]<img width="1437" height="671" alt="dashboard" src="https://github.com/user-attachments/assets/8ccd7d48-fdf5-470f-81f5-5a629bdc1b81" />
+
 
 #### 2. Complex API Variable Extractions
 ![Complex API Builder](docs/images/complex_api.png)
