@@ -49,3 +49,4 @@ backend/*.db-shm
 backend/logs/
 backend/backups/
 backups/
+backend/app/api_crawler.db

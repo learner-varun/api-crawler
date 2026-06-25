@@ -11,6 +11,8 @@ services:
     volumes:
       # Mount a local ./data directory to persist database and backups on the host
       - ./data:/app/data
+    env_file:
+      - .env
     environment:
       # Set DATABASE_URL and BACKUPS_ROOT to point inside the persisted volume
       - DATABASE_URL=sqlite:////app/data/api_crawler.db
