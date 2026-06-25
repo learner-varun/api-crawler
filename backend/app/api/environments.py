@@ -1,11 +1,19 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List
 from backend.app.database.connection import get_db
 from backend.app.models.models import Environment
 from backend.app.schemas.schemas import EnvironmentCreate, EnvironmentUpdate, EnvironmentResponse
 
+logger = logging.getLogger("api_crawler.environments")
+
 router = APIRouter(prefix="/environments", tags=["Environments"])
+
+
+class ScheduleToggleRequest(BaseModel):
+    schedule_enabled: bool
 
 @router.get("", response_model=List[EnvironmentResponse])
 def get_environments(db: Session = Depends(get_db)):
@@ -74,8 +82,37 @@ def update_environment(id: int, env_data: EnvironmentUpdate, db: Session = Depen
     db_env.base_url = env_data.base_url
     if env_data.schedule_enabled is not None:
         db_env.schedule_enabled = env_data.schedule_enabled
-    db.commit()
-    db.refresh(db_env)
+    try:
+        db.commit()
+        db.refresh(db_env)
+    except Exception:
+        db.rollback()
+        logger.error("Failed to update environment %s", id, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update environment. Please try again."
+        )
+    return db_env
+
+
+@router.patch("/{id}/schedule", response_model=EnvironmentResponse)
+def toggle_environment_schedule(id: int, payload: ScheduleToggleRequest, db: Session = Depends(get_db)):
+    """Dedicated endpoint to toggle schedule_enabled for an environment."""
+    db_env = db.query(Environment).filter(Environment.id == id).first()
+    if not db_env:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Environment not found.")
+
+    db_env.schedule_enabled = payload.schedule_enabled
+    try:
+        db.commit()
+        db.refresh(db_env)
+    except Exception:
+        db.rollback()
+        logger.error("Failed to toggle schedule for environment %s", id, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update schedule status. Please try again."
+        )
     return db_env
 
 @router.delete("/{id}")

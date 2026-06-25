@@ -113,6 +113,8 @@ document.addEventListener("DOMContentLoaded", () => {
         btnApiCancel: document.getElementById("btn-api-cancel"),
 
         modalConfirm: document.getElementById("modal-confirm"),
+        confirmTitle: document.getElementById("confirm-title"),
+        confirmIcon: document.getElementById("confirm-icon"),
         confirmMessage: document.getElementById("confirm-message"),
         btnConfirmCancel: document.getElementById("btn-confirm-cancel"),
         btnConfirmDelete: document.getElementById("btn-confirm-delete"),
@@ -271,6 +273,48 @@ document.addEventListener("DOMContentLoaded", () => {
     function closeModal(modalEl) {
         modalEl.classList.add("hidden");
         modalEl.classList.remove("flex");
+    }
+
+    /**
+     * Reusable confirmation modal helper.
+     * @param {Object} opts
+     * @param {string} opts.title - Modal title text
+     * @param {string} opts.message - Modal body message
+     * @param {string} [opts.confirmText="Confirm"] - Action button label
+     * @param {string} [opts.confirmClass] - Action button CSS classes (defaults to red)
+     * @param {string} [opts.iconClass] - Icon container CSS classes
+     * @param {string} [opts.iconHtml] - Inner icon HTML
+     * @param {Function} opts.onConfirm - Callback when confirm is clicked
+     */
+    function showConfirmModal(opts) {
+        elements.confirmTitle.innerText = opts.title || "Confirm Action";
+        elements.confirmMessage.innerText = opts.message || "Are you sure?";
+        elements.btnConfirmDelete.innerText = opts.confirmText || "Confirm";
+
+        // Icon styling
+        if (opts.iconClass) {
+            elements.confirmIcon.className = opts.iconClass;
+        } else {
+            elements.confirmIcon.className = "h-12 w-12 rounded-full bg-red-50 dark:bg-red-950/30 text-red-500 flex items-center justify-center mx-auto text-lg border border-red-200 dark:border-red-800";
+        }
+        if (opts.iconHtml) {
+            elements.confirmIcon.innerHTML = opts.iconHtml;
+        } else {
+            elements.confirmIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+        }
+
+        // Button styling
+        if (opts.confirmClass) {
+            elements.btnConfirmDelete.className = `h-10 px-5 rounded-xl text-white text-sm font-semibold flex-1 transition-colors ${opts.confirmClass}`;
+        } else {
+            elements.btnConfirmDelete.className = "h-10 px-5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold flex-1 transition-colors";
+        }
+
+        elements.btnConfirmDelete.onclick = () => {
+            if (opts.onConfirm) opts.onConfirm();
+        };
+
+        openModal(elements.modalConfirm);
     }
 
     function showOverlay(text) {
@@ -534,7 +578,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         </span>
                     </div>
                     <div class="flex items-center gap-1.5 mt-0.5">
-                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Schedule</span>
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Include in Schedule</span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" class="sr-only peer" ${env.schedule_enabled !== false ? 'checked' : ''} onchange="toggleEnvSchedule(${env.environment_id}, this.checked)">
                             <div class="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:bg-primary-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
@@ -1274,9 +1318,12 @@ document.addEventListener("DOMContentLoaded", () => {
     let apiIdToDelete = null;
     window.confirmDeleteAPI = (id) => {
         apiIdToDelete = id;
-        elements.confirmMessage.innerText = "Are you sure you want to remove this API from the registry? This cannot be undone.";
-        elements.btnConfirmDelete.onclick = executeDeleteAPI;
-        openModal(elements.modalConfirm);
+        showConfirmModal({
+            title: "Confirm Removal",
+            message: "Are you sure you want to remove this API from the registry? This cannot be undone.",
+            confirmText: "Remove",
+            onConfirm: executeDeleteAPI
+        });
     };
 
     async function executeDeleteAPI() {
@@ -1328,7 +1375,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <p class="font-mono text-xs text-primary-500 break-all select-all">${env.base_url}</p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Schedule</span>
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Include in Schedule</span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" class="sr-only peer" ${env.schedule_enabled !== false ? 'checked' : ''} onchange="toggleEnvSchedule(${env.id}, this.checked)">
                             <div class="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:bg-primary-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
@@ -1373,32 +1420,62 @@ document.addEventListener("DOMContentLoaded", () => {
         const env = state.environments.find(e => String(e.id) === String(id));
         if (!env) return;
 
-        try {
-            await axios.put(`${API_BASE}/api/environments/${id}`, {
-                name: env.name,
-                base_url: env.base_url,
-                schedule_enabled: isChecked
+        // Helper to perform the actual toggle API call
+        async function performToggle(envId, enabled, envName) {
+            try {
+                await axios.patch(`${API_BASE}/api/environments/${envId}/schedule`, {
+                    schedule_enabled: enabled
+                });
+                showToast(`Scheduled runs ${enabled ? 'enabled' : 'disabled'} for ${envName}.`);
+                await loadGlobalDropdowns();
+                if (state.activeView === "dashboard") {
+                    fetchDashboard();
+                } else if (state.activeView === "settings") {
+                    renderSettingsEnvironments();
+                }
+            } catch (err) {
+                console.error("Failed to update environment schedule status", err);
+                const detail = err.response && err.response.data && err.response.data.detail
+                    ? err.response.data.detail
+                    : "Failed to update schedule status.";
+                showToast(detail, "error");
+
+                // Re-render to revert toggle position
+                if (state.activeView === "dashboard") {
+                    fetchDashboard();
+                } else if (state.activeView === "settings") {
+                    renderSettingsEnvironments();
+                }
+            }
+        }
+
+        // Ask for confirmation only when disabling (switching to unchecked)
+        if (!isChecked) {
+            showConfirmModal({
+                title: "Disable Schedule",
+                message: `Are you sure you want to exclude "${env.name}" from scheduled validation runs?`,
+                confirmText: "Disable",
+                confirmClass: "bg-amber-600 hover:bg-amber-700",
+                iconClass: "h-12 w-12 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-500 flex items-center justify-center mx-auto text-lg border border-amber-200 dark:border-amber-800",
+                iconHtml: '<i class="fa-solid fa-calendar-xmark"></i>',
+                onConfirm: async () => {
+                    closeModal(elements.modalConfirm);
+                    await performToggle(id, false, env.name);
+                }
             });
-            showToast(`Scheduled runs ${isChecked ? 'enabled' : 'disabled'} for ${env.name}.`);
-            await loadGlobalDropdowns();
-            if (state.activeView === "dashboard") {
-                fetchDashboard();
-            } else if (state.activeView === "settings") {
-                renderSettingsEnvironments();
-            }
-        } catch (err) {
-            console.error("Failed to update environment schedule status", err);
-            const detail = err.response && err.response.data && err.response.data.detail
-                ? err.response.data.detail
-                : "Failed to update schedule status.";
-            showToast(detail, "error");
-            
-            // Re-render to revert toggle position
-            if (state.activeView === "dashboard") {
-                fetchDashboard();
-            } else if (state.activeView === "settings") {
-                renderSettingsEnvironments();
-            }
+
+            // Set cancel to revert the toggle visually
+            elements.btnConfirmCancel.onclick = () => {
+                closeModal(elements.modalConfirm);
+                if (state.activeView === "dashboard") {
+                    fetchDashboard();
+                } else if (state.activeView === "settings") {
+                    renderSettingsEnvironments();
+                }
+            };
+        } else {
+            // Enable directly without confirmation
+            await performToggle(id, true, env.name);
         }
     };
 
@@ -1448,9 +1525,12 @@ document.addEventListener("DOMContentLoaded", () => {
     let envIdToDelete = null;
     window.confirmDeleteEnv = (id) => {
         envIdToDelete = id;
-        elements.confirmMessage.innerText = "Are you sure you want to remove this environment? All backup index logs and execution runs for this environment will be deleted.";
-        elements.btnConfirmDelete.onclick = executeDeleteEnv;
-        openModal(elements.modalConfirm);
+        showConfirmModal({
+            title: "Confirm Removal",
+            message: "Are you sure you want to remove this environment? All backup index logs and execution runs for this environment will be deleted.",
+            confirmText: "Remove",
+            onConfirm: executeDeleteEnv
+        });
     };
 
     async function executeDeleteEnv() {
@@ -1737,9 +1817,12 @@ document.addEventListener("DOMContentLoaded", () => {
     let schedulerIdToDelete = null;
     window.confirmDeleteScheduler = (id) => {
         schedulerIdToDelete = id;
-        elements.confirmMessage.innerText = "Are you sure you want to remove this scheduler slot? Background validations will no longer run at this time.";
-        elements.btnConfirmDelete.onclick = executeDeleteScheduler;
-        openModal(elements.modalConfirm);
+        showConfirmModal({
+            title: "Confirm Removal",
+            message: "Are you sure you want to remove this scheduler slot? Background validations will no longer run at this time.",
+            confirmText: "Remove",
+            onConfirm: executeDeleteScheduler
+        });
     };
 
     async function executeDeleteScheduler() {
@@ -1950,9 +2033,12 @@ document.addEventListener("DOMContentLoaded", () => {
     let backupIdToDelete = null;
     window.confirmDeleteBackup = (id) => {
         backupIdToDelete = id;
-        elements.confirmMessage.innerText = "Are you sure you want to delete this historical baseline backup from the local filesystem? This action is irreversible.";
-        elements.btnConfirmDelete.onclick = executeDeleteBackup;
-        openModal(elements.modalConfirm);
+        showConfirmModal({
+            title: "Confirm Deletion",
+            message: "Are you sure you want to delete this historical baseline backup from the local filesystem? This action is irreversible.",
+            confirmText: "Delete",
+            onConfirm: executeDeleteBackup
+        });
     };
 
     async function executeDeleteBackup() {
@@ -1998,9 +2084,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Wipe Database click listener
     elements.btnWipeDatabase.addEventListener("click", () => {
-        elements.confirmMessage.innerText = "Are you sure you want to completely wipe out the database? This will delete all environments, APIs, baseline backups, and execution history. This action is irreversible!";
-        elements.btnConfirmDelete.onclick = executeWipeDatabase;
-        openModal(elements.modalConfirm);
+        showConfirmModal({
+            title: "Wipe Database",
+            message: "Are you sure you want to completely wipe out the database? This will delete all environments, APIs, baseline backups, and execution history. This action is irreversible!",
+            confirmText: "Wipe Everything",
+            onConfirm: executeWipeDatabase
+        });
     });
 
     async function executeWipeDatabase() {
