@@ -1,0 +1,51 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Environment variables / local environments
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# virtualenv
+.venv/
+venv/
+ENV/
+env/
+pyvenv.cfg
+.python-version
+pip-selfcheck.json
+
+# IDE / Editor configuration
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project-specific database, logs, and backups
+backend/*.db
+backend/*.db-journal
+backend/*.db-wal
+backend/*.db-shm
+backend/logs/
+backend/backups/
+backups/

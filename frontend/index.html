@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API-Crawler - API Monitoring & Baseline Validation</title>
+    
+    <!-- Meta tags for SEO -->
+    <meta name="description" content="Continuously monitor and validate REST APIs against saved baselines. Check schemas, status codes, and structural differences in real-time.">
+    <meta name="author" content="Varun PK">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                            800: '#1e3a8a',
+                            900: '#172554',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Chart.js & Axios CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex min-h-screen">
+
+    <!-- Sidebar / Drawer -->
+    <aside class="w-[280px] fixed top-0 bottom-0 left-0 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col z-20 transition-all duration-300">
+        <!-- Sidebar Logo -->
+        <div class="h-16 px-6 flex items-center gap-3 border-b border-slate-100 dark:border-slate-800">
+            <div class="h-9 w-9 rounded-lg bg-primary-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/30">
+                <i class="fa-solid fa-spider text-lg"></i>
+            </div>
+            <div>
+                <span class="font-extrabold text-lg text-primary-600 dark:text-primary-400 tracking-tight">API-Crawler</span>
+                <p class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold -mt-1">MONITORING SUITE</p>
+            </div>
+        </div>
+        
+        <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+            <button id="nav-dashboard" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 bg-primary-50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400 border border-primary-100/50 dark:border-primary-900/30">
+                <i class="fa-solid fa-chart-pie text-base"></i>
+                Dashboard
+            </button>
+            <button id="nav-complex-apis" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-900/60">
+                <i class="fa-solid fa-network-wired text-base"></i>
+                Complex APIs
+            </button>
+            <button id="nav-registry" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-900/60">
+                <i class="fa-solid fa-server text-base"></i>
+                API Registry
+            </button>
+            <button id="nav-global-vars" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-900/60">
+                <i class="fa-solid fa-globe text-base"></i>
+                Global Variables
+            </button>
+            <button id="nav-settings" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-900/60">
+                <i class="fa-solid fa-cog text-base"></i>
+                Settings
+            </button>
+            <button id="nav-history" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-900/60">
+                <i class="fa-solid fa-history text-base"></i>
+                Logs
+            </button>
+        </nav>
+        
+        <!-- Sidebar Footer -->
+        <div class="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950">
+            <div class="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
+                <div>
+                    <span class="font-medium">Version:</span>
+                    <span class="font-mono ml-0.5">v1.0.0</span>
+                </div>
+                <div>
+                    <span class="font-medium">Build:</span>
+                    <span id="build-number" class="font-mono ml-0.5">26.172.9</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col pl-[280px]">
+        
+        <!-- Fixed Header -->
+        <header class="h-16 px-8 fixed top-0 right-0 left-[280px] bg-white/70 dark:bg-slate-950/70 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between z-10 transition-all duration-300">
+            <!-- Left: Page Title / Metadata -->
+            <div class="flex items-center gap-6">
+                <h1 id="page-title" class="hidden">Dashboard</h1>
+                
+                <div class="hidden md:flex items-center gap-4 text-xs font-semibold text-slate-400 dark:text-slate-500 space-x-2">
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-cloud-arrow-down text-primary-500"></i>
+                        <span>Last Backup:</span>
+                        <span id="header-last-backup" class="font-mono text-slate-600 dark:text-slate-300">Loading...</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 ml-4">
+                        <i class="fa-solid fa-rotate text-emerald-500"></i>
+                        <span>Recent Run:</span>
+                        <span id="header-last-execution" class="font-mono text-slate-600 dark:text-slate-300">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Actions -->
+            <div class="flex items-center gap-3">
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" class="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 transition-colors" title="Toggle Theme">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+                
+                <!-- Environment Dropdown -->
+                <select id="header-env-selector" class="h-10 px-3 pr-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 shadow-sm cursor-pointer">
+                    <option value="" disabled selected>Select Environment</option>
+                </select>
+                
+                <!-- Validate Now -->
+                <button id="btn-validate-now" class="btn-ripple h-10 px-5 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-semibold text-sm flex items-center gap-2 shadow-md shadow-primary-500/10 hover:shadow-lg hover:shadow-primary-500/20 transition-all">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Validate Now</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace Router Panels -->
+        <main class="flex-1 mt-16 p-8 overflow-y-auto pb-24">
+            
+            <!-- VIEW 1: DASHBOARD PAGE -->
+            <div id="view-dashboard" class="space-y-8 animate-slide-up">
+                <!-- SKELETON LOADER -->
+                <div id="dashboard-skeleton" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="h-96 skeleton"></div>
+                        <div class="h-96 skeleton"></div>
+                    </div>
+                </div>
+
+                <!-- REAL PANEL CONTENT (hidden during fetch) -->
+                <div id="dashboard-content" class="hidden space-y-8">
+                    <!-- Environment Panel Grid -->
+                    <div id="env-panels-container" class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <!-- Dynamic Environment Cards will go here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: API REGISTRY PAGE -->
+            <div id="view-registry" class="hidden space-y-6 animate-slide-up">
+                <!-- Search & Add Action -->
+                <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+                    <div class="flex flex-1 items-center gap-3 max-w-3xl">
+                        <!-- Environment Selector -->
+                        <select id="registry-env-selector" class="h-11 px-3 pr-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 shadow-sm cursor-pointer w-48">
+                            <option value="" disabled selected>Select Environment</option>
+                        </select>
+                        
+                        <!-- Search Box -->
+                        <div class="relative flex-1">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 dark:text-slate-500 pointer-events-none">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </span>
+                            <input type="text" id="api-search-bar" placeholder="Search APIs by name or endpoint..." class="h-11 w-full pl-10 pr-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-500 transition-all shadow-sm">
+                        </div>
+
+                        <!-- Add Complex API button -->
+                        <button id="registry-btn-add-complex-api" class="h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-sm">
+                            <i class="fa-solid fa-network-wired text-primary-500"></i> Add Complex API
+                        </button>
+                        <button id="registry-btn-complex-api-tutorial" class="h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-sm">
+                            <i class="fa-solid fa-circle-question text-primary-500"></i> Tutorial
+                        </button>
+                    </div>
+                    
+                    <!-- CSV Format Spec Alert -->
+                    <span class="text-xs text-slate-400 bg-slate-100 dark:bg-slate-950 dark:text-slate-500 px-3 py-1.5 rounded-lg font-mono">
+                        Endpoint must be an absolute URL (e.g. <b class="text-slate-600 dark:text-slate-300 font-bold">http://</b> or <b class="text-slate-600 dark:text-slate-300 font-bold">https://</b>)
+                    </span>
+                </div>
+
+                <!-- API List Card -->
+                <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-150 dark:border-slate-800/80 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                    <th class="px-6 py-4">API Name</th>
+                                    <th class="px-6 py-4">Endpoint URL</th>
+                                    <th class="px-6 py-4">Created Date</th>
+                                    <th class="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="api-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/50 text-sm">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 3: SYSTEM SETTINGS PAGE -->
+            <div id="view-settings" class="hidden space-y-8 animate-slide-up">
+                
+                <!-- Section 1: Environment Settings -->
+                <section class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <div>
+                            <h2 class="font-bold text-lg text-slate-900 dark:text-white">Environment Management</h2>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">Add or edit up to 4 deployment endpoints</p>
+                        </div>
+                    </div>
+                    
+                    <div id="environments-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Dynamic cards + Add Environment Card -->
+                    </div>
+                </section>
+
+                <!-- Section 2: Baseline Backup Manager -->
+                <section class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <div>
+                            <h2 class="font-bold text-lg text-slate-900 dark:text-white">Baseline Backup Management</h2>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">Capture active responses to construct baseline templates</p>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-panel p-6 rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6">
+                        <div class="space-y-1 max-w-xl">
+                            <span class="text-xs font-bold text-primary-500 dark:text-primary-400 tracking-wide uppercase">Backup Workflow</span>
+                            <p class="text-sm text-slate-600 dark:text-slate-300">Creates baseline checkpoints. Queries all registered APIs, executes GET requests on the selected environment, and locks down the response payloads as baseline schemas.</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-center gap-3">
+                            <select id="settings-backup-env" class="h-11 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-semibold w-full sm:w-48">
+                                <option value="" disabled selected>Select Env</option>
+                            </select>
+                            <button id="btn-backup-now" class="btn-ripple h-11 px-6 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap shadow-sm w-full sm:w-auto">
+                                <i class="fa-solid fa-camera"></i>
+                                <span>Backup Now</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 3: API CSV Batch Import -->
+                <section class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <div>
+                            <h2 class="font-bold text-lg text-slate-900 dark:text-white">API Bulk CSV Import</h2>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">Upload CSV file to populate APIs registry in bulk</p>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-panel p-8 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-center space-y-4 hover:border-primary-500 dark:hover:border-primary-400 transition-colors">
+                        <div class="h-12 w-12 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500">
+                            <i class="fa-solid fa-file-csv text-2xl"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="font-semibold text-sm">Upload CSV File</p>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">Select target environment and upload a CSV file. Max size 5 MB.</p>
+                        </div>
+                        <!-- Environment Selector for CSV Import -->
+                        <select id="import-csv-env-selector" class="h-11 px-3 pr-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 shadow-sm cursor-pointer w-56">
+                            <option value="" disabled selected>Select Environment</option>
+                        </select>
+                        <input type="file" id="import-csv-file" accept=".csv" class="hidden">
+                        <button onclick="document.getElementById('import-csv-file').click()" class="h-10 px-5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-sm font-semibold transition-colors">
+                            Select CSV File
+                        </button>
+                        <a href="assets/sample_apis.csv" download="sample_apis.csv" class="text-xs text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 font-semibold flex items-center gap-1.5 transition-colors mt-1">
+                            <i class="fa-solid fa-file-arrow-down"></i>
+                            Download Sample CSV Template
+                        </a>
+                    </div>
+                </section>
+
+                <!-- Section 4: Scheduler Configuration -->
+                <section class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <div>
+                            <h2 class="font-bold text-lg text-slate-900 dark:text-white">Scheduler Configuration</h2>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">Configure validation execution times (Maximum 100 schedules)</p>
+                        </div>
+                    </div>
+                    
+                    <div id="scheduler-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Dynamic scheduler cards + Add Scheduler Card -->
+                    </div>
+                </section>
+
+                <!-- Section: Communication Settings -->
+                <section class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <div>
+                            <h2 class="font-bold text-lg text-slate-900 dark:text-white">Communication Settings</h2>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">Configure notifications to receive status updates after each validation run</p>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-panel p-6 rounded-2xl space-y-6">
+                        <div class="space-y-2">
+                            <label for="notification-channel" class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Notification Channel</label>
+                            <select id="notification-channel" class="h-10 px-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 shadow-sm cursor-pointer w-full md:w-64">
+                                <option value="none">Disabled (None)</option>
+                                <option value="email">Email (SMTP)</option>
+                                <option value="slack">Slack Webhook</option>
+                                <option value="teams">Microsoft Teams Webhook</option>
+                            </select>
+                        </div>
+
+                        <!-- Webhook Config (Slack / Teams) -->
+                        <div id="webhook-config-wrapper" class="hidden space-y-4 animate-scale-in">
+                            <div class="space-y-1">
+                                <label for="input-webhook-url" class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Webhook URL</label>
+                                <input type="url" id="input-webhook-url" placeholder="https://hooks.slack.com/services/..." class="h-10 w-full px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 font-medium">
+                            </div>
+                        </div>
+
+                        <!-- Email Config -->
+                        <div id="email-config-wrapper" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 animate-scale-in">
+                            <div class="space-y-1">
+                                <label for="input-smtp-server" class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">SMTP Server</label>
+                                <input type="text" id="input-smtp-server" placeholder="smtp.gmail.com" class="h-10 w-full px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 font-medium">
+                            </div>
+                            <div class="space-y-1">
+                                <label for="input-smtp-port" class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">SMTP Port</label>
+                                <input type="number" id="input-smtp-port" placeholder="587" class="h-10 w-full px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 font-medium">
+                            </div>
+                            <div class="space-y-1">
+                                <label for="input-sender-email" class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Sender Email</label>
+                                <input type="email" id="input-sender-email" placeholder="sender@example.com" class="h-10 w-full px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 font-medium">
+                            </div>
+                            <div class="space-y-1">
+                                <label for="input-sender-password" class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Sender Password / App Password</label>
+                                <input type="password" id="input-sender-password" placeholder="••••••••••••" class="h-10 w-full px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 font-medium">
+                            </div>
+                            <div class="space-y-1 md:col-span-2">
+                                <label for="input-recipient-email" class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Recipient Email</label>
+                                <input type="email" id="input-recipient-email" placeholder="recipient@example.com" class="h-10 w-full px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 font-medium">
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 dark:border-slate-800/60 pt-4 flex justify-end gap-3">
+                            <button id="btn-test-notification" class="btn-ripple h-10 px-5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-750 dark:text-slate-300 font-semibold text-sm flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Test Connection</span>
+                            </button>
+                            <button id="btn-save-communication" class="btn-ripple h-10 px-6 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-sm">
+                                <i class="fa-solid fa-save"></i>
+                                <span>Save Settings</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 5: Available Local Backups -->
+                <section class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <div>
+                            <h2 class="font-bold text-lg text-slate-900 dark:text-white">Available Local Backups</h2>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">View and download all saved environment baseline checkpoints</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label for="settings-filter-backup-env" class="text-xs text-slate-400 dark:text-slate-500 font-semibold">Filter:</label>
+                            <select id="settings-filter-backup-env" class="h-9 px-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold cursor-pointer">
+                                <option value="all">All Environments</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-150 dark:border-slate-800/80 font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider">
+                                        <th class="px-6 py-3">Backup Version</th>
+                                        <th class="px-6 py-3">Environment</th>
+                                        <th class="px-6 py-3">Checkpoint Time</th>
+                                        <th class="px-6 py-3">Storage Directory</th>
+                                        <th class="px-6 py-3 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="backups-list-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/50 text-xs font-semibold">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 6: Clear Application Data (Danger Zone) -->
+                <section class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <div>
+                            <h2 class="font-bold text-lg text-rose-600 dark:text-rose-400">Danger Zone</h2>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">System maintenance and data resets</p>
+                        </div>
+                    </div>
+                    
+                    <div class="border-2 border-red-200/60 dark:border-red-900/40 p-6 rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6 bg-red-50/5 dark:bg-red-950/5 shadow-sm">
+                        <div class="space-y-1.5 max-w-xl">
+                            <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                                <i class="fa-solid fa-radiation text-rose-500 animate-pulse"></i>
+                                Reset All Application Data
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Completely clears all registry environments, registered API configurations, saved baseline backups, and history records. Wipes files stored locally. This action is irreversible.</p>
+                        </div>
+                        <button id="btn-wipe-database" class="btn-ripple h-11 px-6 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap shadow-sm">
+                            <i class="fa-solid fa-dumpster-fire"></i>
+                            <span>Wipe Database</span>
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- VIEW 4: EXECUTION HISTORY / LOGS PAGE -->
+            <div id="view-history" class="hidden space-y-6 animate-slide-up">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                    <div>
+                        <h2 class="font-bold text-lg text-slate-900 dark:text-white">Validation Audit Trail</h2>
+                        <p class="text-xs text-slate-400 dark:text-slate-500">Historical validation crawler execution summaries</p>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-150 dark:border-slate-800/80 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                    <th class="px-6 py-4">Execution Date / Time</th>
+                                    <th class="px-6 py-4">Environment</th>
+                                    <th class="px-6 py-4">Total Checked</th>
+                                    <th class="px-6 py-4">Passed</th>
+                                    <th class="px-6 py-4">Failed</th>
+                                    <th class="px-6 py-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/50 text-sm">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 5: COMPLEX APIS PAGE -->
+            <div id="view-complex-apis" class="hidden space-y-6 animate-slide-up">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                    <div>
+                        <h2 class="font-bold text-lg text-slate-900 dark:text-white">Complex APIs (Stateful Execution)</h2>
+                        <p class="text-xs text-slate-400 dark:text-slate-500">Manage POST requests, variables, and chained extraction rules.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-complex-api-tutorial" class="h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-sm">
+                            <i class="fa-solid fa-circle-question text-primary-500"></i> Tutorial
+                        </button>
+                        <button id="btn-add-complex-api" class="btn-ripple h-10 px-5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Add Complex API
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="glass-panel rounded-2xl p-6">
+                    <div id="complex-apis-list" class="space-y-4">
+                        <!-- Dynamic list renders here -->
+                        <div class="text-center py-8 text-slate-500 text-sm">No complex APIs defined yet.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 6: GLOBAL VARIABLES PAGE -->
+            <div id="view-global-vars" class="hidden space-y-6 animate-slide-up">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                    <div>
+                        <h2 class="font-bold text-lg text-slate-900 dark:text-white">Global Variables Vault</h2>
+                        <p class="text-xs text-slate-400 dark:text-slate-500">Variables available for substitution in Complex APIs.</p>
+                    </div>
+                    <button id="btn-add-global-var" class="btn-ripple h-10 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Add Variable
+                    </button>
+                </div>
+                
+                <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-150 dark:border-slate-800/80 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                <th class="px-6 py-4">Variable Key</th>
+                                <th class="px-6 py-4">Last Updated</th>
+                                <th class="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="global-vars-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/50 text-sm font-mono">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </main>
+        
+        <!-- FAB Float Button -->
+        <button id="btn-add-api-fab" class="btn-ripple fixed bottom-16 right-8 h-14 w-14 rounded-full bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white shadow-xl shadow-primary-500/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-10 hidden" title="Add API to Registry">
+            <i class="fa-solid fa-plus text-xl"></i>
+        </button>
+
+        <!-- Fixed Footer -->
+        <footer class="h-12 border-t border-slate-200 dark:border-slate-800 fixed bottom-0 right-0 left-[280px] bg-slate-50 dark:bg-slate-950 px-8 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 z-10 transition-all duration-300">
+            <div>
+                <span>API-Crawler Dashboard</span>
+            </div>
+            <div class="font-medium">
+                Crafted with passion and precision by Varun PK
+            </div>
+        </footer>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODALS & PORTALS -->
+    <!-- ======================================================== -->
+
+    <!-- Modal 1: Environment Add/Edit Modal -->
+    <div id="modal-env" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl overflow-hidden shadow-xl animate-scale-in p-6 space-y-4">
+            <h3 id="env-modal-title" class="font-bold text-lg text-slate-900">Add Environment</h3>
+            
+            <form id="env-form" class="space-y-4">
+                <input type="hidden" id="env-id-field">
+                
+                <div class="space-y-1">
+                    <label for="env-name" class="text-xs font-bold text-slate-400 uppercase tracking-wide">Environment Name</label>
+                    <input type="text" id="env-name" required placeholder="e.g. Stage, Production" class="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 font-medium">
+                </div>
+                
+                <div class="space-y-1">
+                    <label for="env-url" class="text-xs font-bold text-slate-400 uppercase tracking-wide">Base URL</label>
+                    <input type="url" id="env-url" required placeholder="https://api.stage.example.com" class="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 font-medium">
+                    <p class="text-[10px] text-slate-400 font-medium">HTTPS URLs are highly preferred for security</p>
+                </div>
+                
+                <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+                    <button type="button" id="btn-env-cancel" class="h-10 px-5 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="h-10 px-5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold">
+                        Save Environment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: API Add/Edit Modal -->
+    <div id="modal-api" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl overflow-hidden shadow-xl animate-scale-in p-6 space-y-4">
+            <h3 id="api-modal-title" class="font-bold text-lg text-slate-900">Add API</h3>
+            
+            <form id="api-form" class="space-y-4">
+                <input type="hidden" id="api-id-field">
+                <input type="hidden" id="api-env-id-field">
+                
+                <div class="space-y-1">
+                    <label for="api-name" class="text-xs font-bold text-slate-400 uppercase tracking-wide">API Name</label>
+                    <input type="text" id="api-name" required placeholder="e.g. Get User Details" class="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 font-medium">
+                </div>
+                
+                <div class="space-y-1">
+                    <label for="api-endpoint" class="text-xs font-bold text-slate-400 uppercase tracking-wide">Endpoint URL</label>
+                    <input type="text" id="api-endpoint" required placeholder="https://api.example.com/users" class="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 font-medium">
+                    <p class="text-[10px] text-slate-450 font-medium">Endpoint MUST be a valid absolute URL (starting with <code class="font-mono text-primary-500">http://</code> or <code class="font-mono text-primary-500">https://</code>)</p>
+                </div>
+                
+                <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+                    <button type="button" id="btn-api-cancel" class="h-10 px-5 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="h-10 px-5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold">
+                        Save API
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Delete Confirmation Custom Modal -->
+    <div id="modal-confirm" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white border border-slate-200 w-full max-w-sm rounded-2xl overflow-hidden shadow-xl animate-scale-in p-6 text-center space-y-4">
+            <div class="h-12 w-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto text-lg border border-red-200">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            
+            <div class="space-y-1.5">
+                <h3 class="font-bold text-slate-900 text-lg">Confirm Removal</h3>
+                <p id="confirm-message" class="text-sm text-slate-500">Are you sure you want to remove this environment?</p>
+            </div>
+            
+            <div class="flex items-center justify-center gap-3 pt-2">
+                <button id="btn-confirm-cancel" class="h-10 px-5 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50 flex-1">
+                    Cancel
+                </button>
+                <button id="btn-confirm-delete" class="h-10 px-5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold flex-1">
+                    Remove
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: CSV Import Preview Modal -->
+    <div id="modal-csv-preview" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl overflow-hidden shadow-xl animate-scale-in p-6 space-y-4 flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-lg text-slate-900">API CSV Import Preview</h3>
+                <span id="csv-preview-summary" class="text-xs text-slate-450 font-semibold font-mono">0 valid, 0 invalid</span>
+            </div>
+            
+            <!-- Table Box scrollable -->
+            <div class="flex-1 overflow-y-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50/50 border-b border-slate-200 font-bold text-slate-450 uppercase tracking-wider">
+                            <th class="px-4 py-3 w-12 text-center">#</th>
+                            <th class="px-4 py-3">API Name</th>
+                            <th class="px-4 py-3">Placeholder Endpoint</th>
+                            <th class="px-4 py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="csv-preview-body" class="divide-y divide-slate-100 font-medium">
+                        <!-- Dynamic items -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Cancel confirm option alert warning if import invalid -->
+            <div id="csv-import-warning" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-600 flex items-start gap-2.5">
+                <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                <p>One or more APIs have parsing/duplication errors. Please resolve duplicates and ensure endpoint schema matches format <code class="font-mono bg-amber-100 px-1 py-0.5 rounded text-amber-800">{base_url}/</code> before importing.</p>
+            </div>
+            
+            <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+                <span class="text-xs text-slate-400">MIME validations passed</span>
+                <div class="flex items-center gap-3">
+                    <button id="btn-csv-cancel" class="h-10 px-5 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50">
+                        Discard
+                    </button>
+                    <button id="btn-csv-import" disabled class="h-10 px-5 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 disabled:bg-slate-200 disabled:text-slate-400 text-white text-sm font-semibold flex items-center gap-1.5 transition-colors">
+                        <i class="fa-solid fa-plus-circle"></i>
+                        <span>Add APIs</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 5: Custom Failure Modal -->
+    <div id="modal-failure-detail" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white border border-slate-200 w-full max-w-xl rounded-2xl overflow-hidden shadow-xl animate-scale-in p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-lg text-slate-900">Response Diff Analysis</h3>
+                <span id="failure-modal-reason" class="text-xs px-2.5 py-1 rounded-full font-semibold border status-pill-failed">Status Mismatch</span>
+            </div>
+            
+            <div class="space-y-3.5 text-sm">
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">API Endpoint Name</span>
+                    <span id="failure-modal-name" class="font-semibold text-slate-800">Fetch Dashboard Stats</span>
+                </div>
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Full Target URL Called</span>
+                    <span id="failure-modal-url" class="font-mono text-xs text-primary-600 break-all">https://api.stage.example/dashboard</span>
+                </div>
+                
+                <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Detected JSON Diff Tree</span>
+                    <div id="failure-modal-diff-box" class="diff-code-box p-4 bg-slate-900 text-slate-200 border border-slate-800">
+                        <!-- Diff list renders here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                <button id="btn-diff-viewer" class="h-10 px-5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold flex items-center gap-2 transition-colors">
+                    <i class="fa-solid fa-code-compare"></i>
+                    Diff Viewer
+                </button>
+                <button id="btn-failure-close" class="h-10 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold">
+                    Close Details
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 7: Side-by-Side Diff Viewer Modal -->
+    <div id="modal-diff-viewer" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm z-[55] flex items-center justify-center hidden">
+        <div class="bg-white border border-slate-200 w-full max-w-5xl rounded-2xl overflow-hidden shadow-xl animate-scale-in p-6 space-y-4 flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div class="space-y-0.5">
+                    <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-code-compare text-primary-500"></i>
+                        Response Diff Viewer
+                    </h3>
+                    <p id="diff-viewer-subtitle" class="text-xs text-slate-400 font-medium"></p>
+                </div>
+                <span id="diff-viewer-version" class="text-xs px-2.5 py-1 rounded-lg font-semibold bg-slate-100 text-slate-600 border border-slate-200 font-mono"></span>
+            </div>
+
+            <!-- Loading State -->
+            <div id="diff-viewer-loading" class="flex-1 flex flex-col items-center justify-center py-12 space-y-3 hidden">
+                <div class="h-10 w-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+                <span class="text-sm font-semibold text-slate-400">Fetching baseline and live response...</span>
+            </div>
+
+            <!-- Error State -->
+            <div id="diff-viewer-error" class="hidden p-4 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-700 flex items-start gap-2.5">
+                <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                <p id="diff-viewer-error-msg"></p>
+            </div>
+
+            <!-- Side-by-Side Panels -->
+            <div id="diff-viewer-panels" class="flex-1 grid grid-cols-2 gap-4 min-h-0 hidden">
+                <!-- Left: Backup Data -->
+                <div class="flex flex-col min-h-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span id="diff-viewer-backup-label" class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                            Baseline (Backup)
+                        </span>
+                    </div>
+                    <div id="diff-viewer-backup" class="json-viewer-panel flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 select-all">
+                    </div>
+                </div>
+                <!-- Right: Current Data -->
+                <div class="flex flex-col min-h-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span id="diff-viewer-current-label" class="text-[10px] font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-satellite-dish"></i>
+                            Current (Live)
+                        </span>
+                        <span id="diff-viewer-change-count" class="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md"></span>
+                    </div>
+                    <div id="diff-viewer-current" class="json-viewer-panel flex-1 p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 select-all">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                <div id="diff-viewer-legend" class="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider">
+                    <span class="flex items-center gap-1.5 text-amber-600"><span class="inline-block w-3 h-3 rounded-sm bg-amber-100 border border-amber-300"></span> Changed</span>
+                    <span class="flex items-center gap-1.5 text-red-600"><span class="inline-block w-3 h-3 rounded-sm bg-red-100 border border-red-300"></span> Removed</span>
+                    <span class="flex items-center gap-1.5 text-emerald-600"><span class="inline-block w-3 h-3 rounded-sm bg-emerald-100 border border-emerald-300"></span> Added</span>
+                </div>
+                <button id="btn-diff-viewer-close" class="h-10 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold">
+                    Close Viewer
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- Modal 8: Add/Edit Global Variable -->
+    <div id="modal-global-var" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-xl animate-scale-in flex flex-col">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <h3 id="modal-global-var-title" class="font-bold text-lg text-slate-900 dark:text-white">Add Global Variable</h3>
+                <button id="btn-global-var-close" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 flex-1">
+                <input type="hidden" id="input-gv-id">
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Variable Key</label>
+                    <input type="text" id="input-gv-key" placeholder="e.g. auth_token" class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-semibold transition-all">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Value</label>
+                    <input type="password" id="input-gv-value" placeholder="Value (hidden in UI after saving)" class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-semibold transition-all">
+                </div>
+            </div>
+            <div class="p-6 pt-0 flex gap-3">
+                <button id="btn-global-var-save" class="flex-1 h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold shadow-sm transition-colors text-sm">Save Variable</button>
+                <button id="btn-global-var-cancel" class="flex-1 h-11 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-slate-700 dark:text-slate-300 transition-colors text-sm">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 9: Add/Edit Complex API -->
+    <div id="modal-complex-api" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-2xl rounded-2xl overflow-hidden shadow-xl animate-scale-in flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <h3 id="modal-complex-api-title" class="font-bold text-lg text-slate-900 dark:text-white">Add Complex API</h3>
+                <button id="btn-complex-api-close" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-5 flex-1 overflow-y-auto">
+                <input type="hidden" id="input-ca-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Environment</label>
+                        <select id="input-ca-env" class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 font-semibold transition-all">
+                            <!-- populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">API Name</label>
+                        <input type="text" id="input-ca-name" placeholder="e.g. Authenticate User" class="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 font-semibold transition-all">
+                    </div>
+                </div>
+                
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide flex items-center justify-between">
+                        Curl Command
+                        <span class="text-[10px] lowercase text-slate-400 font-normal">Use {{var_key}} for substitution</span>
+                    </label>
+                    <textarea id="input-ca-curl" rows="4" placeholder="curl -X POST https://api.example.com/auth -H 'Content-Type: application/json' -d '{&quot;user&quot;: &quot;{{admin_user}}&quot;}'" class="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 font-mono transition-all resize-y"></textarea>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Extract Variables from Response</label>
+                        <button id="btn-add-extract-rule" class="text-xs font-bold text-primary-600 hover:text-primary-700 bg-primary-50 px-2 py-1 rounded-md transition-colors">+ Add Rule</button>
+                    </div>
+                    <div id="ca-extract-rules-container" class="space-y-2">
+                        <!-- Rules populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Assertion Rules</label>
+                        <button id="btn-add-assertion-rule" class="text-xs font-bold text-primary-600 hover:text-primary-700 bg-primary-50 px-2 py-1 rounded-md transition-colors">+ Add Assertion</button>
+                    </div>
+                    <div id="ca-assertions-container" class="space-y-3">
+                        <!-- Assertions populated dynamically -->
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 border-t border-slate-100 dark:border-slate-800 flex gap-3">
+                <button id="btn-complex-api-save" class="flex-1 h-11 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-semibold shadow-sm transition-colors text-sm">Save Complex API</button>
+                <button id="btn-complex-api-cancel" class="flex-1 h-11 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-slate-700 dark:text-slate-300 transition-colors text-sm">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 10: Complex API Run Result Modal -->
+    <div id="modal-complex-api-run-result" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-3xl rounded-2xl overflow-hidden shadow-xl animate-scale-in flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <div class="space-y-0.5">
+                    <h3 id="run-result-title" class="font-bold text-lg text-slate-900 dark:text-white">Complex API Run Result</h3>
+                    <p id="run-result-subtitle" class="text-xs text-slate-400 font-medium"></p>
+                </div>
+                <button id="btn-run-result-close" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="p-6 space-y-5 flex-1 overflow-y-auto">
+                
+                <!-- Status & Reason Section (Box 1: Reason) -->
+                <div class="space-y-1.5">
+                    <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Execution Summary / Reason</span>
+                    <div id="run-result-reason-box" class="p-4 rounded-xl border text-sm font-semibold select-all">
+                        <!-- Summary / error message / assertions results go here -->
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 flex-1 min-h-[300px]">
+                    <!-- Request Section (Box 2: Request) -->
+                    <div class="space-y-1.5 flex flex-col min-h-0">
+                        <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Request Sent</span>
+                        <div id="run-result-request-box" class="diff-code-box flex-1 p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-700 dark:text-slate-300 select-all overflow-y-auto text-[11px] font-mono whitespace-pre-wrap">
+                            <!-- Request data -->
+                        </div>
+                    </div>
+
+                    <!-- Response Section (Box 3: Response) -->
+                    <div class="space-y-1.5 flex flex-col min-h-0">
+                        <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Response Received</span>
+                        <div id="run-result-response-box" class="diff-code-box flex-1 p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-700 dark:text-slate-300 select-all overflow-y-auto text-[11px] font-mono whitespace-pre-wrap">
+                            <!-- Response data -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assertions Section (Box 4: Assertions list, full width) -->
+                <div class="space-y-1.5 border-t border-slate-100 dark:border-slate-800 pt-4">
+                    <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Assertions Performed</span>
+                    <div id="run-result-assertions-box" class="space-y-2">
+                        <!-- Assertion cards render here -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                <button id="btn-run-result-ok" class="h-10 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 6: General Alert/Notification Modal -->
+    <div id="modal-alert" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white border border-slate-200 w-full max-w-sm rounded-2xl overflow-hidden shadow-xl animate-scale-in p-6 text-center space-y-4">
+            <div id="alert-icon" class="h-12 w-12 rounded-full flex items-center justify-center mx-auto text-lg border">
+                <i class="fa-solid fa-circle-info"></i>
+            </div>
+            
+            <div class="space-y-1.5">
+                <h3 id="alert-title" class="font-bold text-slate-900 text-lg">System Message</h3>
+                <p id="alert-message" class="text-sm text-slate-500">Message content goes here.</p>
+            </div>
+            
+            <div class="pt-2">
+                <button id="btn-alert-close" class="h-10 w-full rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold">
+                    Acknowledge
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 7: Scheduler Card Add/Edit Modal -->
+    <div id="modal-scheduler" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-xl animate-scale-in p-6 space-y-4">
+            <h3 id="scheduler-modal-title" class="font-bold text-lg text-slate-900 dark:text-white">Configure Time Slot</h3>
+            
+            <form id="scheduler-form" class="space-y-4">
+                <input type="hidden" id="scheduler-id-field">
+                
+                <div class="space-y-1">
+                    <label for="scheduler-name" class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Schedule Name</label>
+                    <input type="text" id="scheduler-name" required placeholder="e.g. Daily Sync, Midnight Run" class="h-10 w-full px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 font-medium">
+                </div>
+                
+                <div class="space-y-1">
+                    <label for="scheduler-time" class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Trigger Time</label>
+                    <input type="text" id="scheduler-time" required placeholder="e.g. 12:00 AM, 2:30 PM, 14:35" class="h-10 w-full px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-slate-700 dark:text-slate-300 font-medium">
+                    <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Enter 12-hour (e.g., "2:30 PM", "12 AM") or 24-hour style format (e.g., "14:30").</p>
+                </div>
+                
+                <div class="flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800/80 pt-4">
+                    <button type="button" id="btn-scheduler-cancel" class="h-10 px-5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300">
+                        Cancel
+                    </button>
+                    <button type="submit" class="h-10 px-5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold shadow-sm">
+                        Save Schedule
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 11: Complex API & Global Variable Tutorial Modal -->
+    <div id="modal-tutorial" class="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-2xl rounded-2xl overflow-hidden shadow-xl animate-scale-in flex flex-col max-h-[85vh]">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap text-primary-500"></i>
+                    Tutorial: Variables & JSON Extraction
+                </h3>
+                <button id="btn-tutorial-close" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-6 flex-1 overflow-y-auto text-sm text-slate-600 dark:text-slate-350">
+                <!-- Section 1: Global Variables -->
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <span class="flex h-5 w-5 items-center justify-center rounded bg-primary-50 dark:bg-primary-950/40 text-[11px] font-bold text-primary-600 dark:text-primary-400">1</span>
+                        Adding & Setting Global Variables
+                    </h4>
+                    <p>Global variables are dynamic placeholders you can reference anywhere in your API URLs, Header values, or Body payloads using the double brace format: <code class="font-mono text-xs bg-slate-100 dark:bg-slate-950 text-primary-500 px-1.5 py-0.5 rounded font-bold">{{variable_key}}</code>.</p>
+                    <ul class="list-disc pl-5 space-y-1 text-xs">
+                        <li><b>Defining Variables</b>: Go to the <b>Global Variables</b> tab in the sidebar and click <b>+ Add Variable</b>. Provide a unique key name and its initial value.</li>
+                        <li><b>System Environment Variables</b>: You can also reference standard operating system environment variables (e.g., from your host machine or Docker container env). If a template variable is not defined in the database, the backend automatically falls back to searching <code>os.environ</code>. This is ideal for sensitive values like <code>{{API_KEY}}</code> or <code>{{SMTP_PASSWORD}}</code>.</li>
+                        <li><b>Referencing Variables</b>: Inside any text field (URLs, cURL Commands, assertions), type <code class="font-mono text-primary-500 font-bold">{{</code> to open the dynamic autocomplete suggestions dropdown listing all available variables.</li>
+                    </ul>
+                </div>
+                
+                <!-- Section 2: Extracting Keys -->
+                <div class="space-y-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+                    <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <span class="flex h-5 w-5 items-center justify-center rounded bg-primary-50 dark:bg-primary-950/40 text-[11px] font-bold text-primary-600 dark:text-primary-400">2</span>
+                        How to Extract Keys (Dot-Notation JSONPath)
+                    </h4>
+                    <p>When executing Complex APIs, you can extract values from response JSON payloads and automatically save/overwrite global variables for subsequent runs using <b>dot-notation paths</b>.</p>
+                    
+                    <!-- Example 1: Objects -->
+                    <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
+                        <span class="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wide">Example A: Extracting from an Object</span>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Response JSON</span>
+                                <pre class="text-[11px] font-mono bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-800 mt-1 overflow-x-auto text-slate-700 dark:text-slate-300">
+{
+  "status": "success",
+  "data": {
+    "auth_token": "secret_abc123"
+  }
+}</pre>
+                            </div>
+                            <div class="flex flex-col justify-center space-y-1.5 text-xs">
+                                <div>
+                                    <span class="font-semibold block text-slate-800 dark:text-slate-200">Extraction Path:</span>
+                                    <code class="font-mono text-xs text-primary-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-1 py-0.5 rounded">data.auth_token</code>
+                                </div>
+                                <div>
+                                    <span class="font-semibold block text-slate-800 dark:text-slate-200">Result:</span>
+                                    Saves the value <code class="font-mono bg-white dark:bg-slate-900 px-1 rounded">"secret_abc123"</code> to your variable.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Example 2: Arrays -->
+                    <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
+                        <span class="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wide">Example B: Extracting from an Array</span>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Response JSON</span>
+                                <pre class="text-[11px] font-mono bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-800 mt-1 overflow-x-auto text-slate-700 dark:text-slate-300">
+[
+  {
+    "id": 105,
+    "title": "First Post"
+  },
+  {
+    "id": 208,
+    "title": "Second Post"
+  }
+]</pre>
+                            </div>
+                            <div class="flex flex-col justify-center space-y-2 text-xs">
+                                <div>
+                                    <span class="font-semibold block text-slate-800 dark:text-slate-200">Extraction Path for first element's ID:</span>
+                                    <code class="font-mono text-xs text-primary-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-1 py-0.5 rounded">0.id</code>
+                                    <span class="text-[10px] text-slate-400 dark:text-slate-505 block mt-0.5">(extracts <code class="font-mono bg-white dark:bg-slate-900 px-1 rounded">105</code>)</span>
+                                </div>
+                                <div>
+                                    <span class="font-semibold block text-slate-800 dark:text-slate-200">Extraction Path for second element's Title:</span>
+                                    <code class="font-mono text-xs text-primary-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-1 py-0.5 rounded">1.title</code>
+                                    <span class="text-[10px] text-slate-400 dark:text-slate-505 block mt-0.5">(extracts <code class="font-mono bg-white dark:bg-slate-900 px-1 rounded">"Second Post"</code>)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Example 3: Nested Mixed -->
+                    <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
+                        <span class="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wide">Example C: Extracting from Nested Objects & Arrays</span>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-semibold">Response JSON</span>
+                                <pre class="text-[11px] font-mono bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-800 mt-1 overflow-x-auto text-slate-700 dark:text-slate-300">
+{
+  "company": "Crawler Inc",
+  "departments": [
+    {
+      "name": "QA",
+      "leads": [
+        { "id": 7, "name": "Varun" }
+      ]
+    }
+  ]
+}</pre>
+                            </div>
+                            <div class="flex flex-col justify-center space-y-1.5 text-xs">
+                                <div>
+                                    <span class="font-semibold block text-slate-800 dark:text-slate-200">Extraction Path for lead ID:</span>
+                                    <code class="font-mono text-xs text-primary-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-1 py-0.5 rounded">departments.0.leads.0.id</code>
+                                </div>
+                                <div>
+                                    <span class="font-semibold block text-slate-800 dark:text-slate-200">Result:</span>
+                                    Saves the value <code class="font-mono bg-white dark:bg-slate-900 px-1 rounded">7</code>.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                <button id="btn-tutorial-close-bottom" class="h-10 px-6 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm shadow-sm transition-all">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Portal -->
+    <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-3 z-50 pointer-events-none">
+        <!-- Dynamic Toast Items spawn here -->
+    </div>
+
+    <!-- Global Fullscreen Page Loading Overlay -->
+    <div id="page-overlay" class="fixed inset-0 bg-white/70 dark:bg-slate-950/70 backdrop-blur-sm z-[60] flex flex-col items-center justify-center gap-3 hidden">
+        <div class="h-10 w-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+        <span id="overlay-text" class="text-sm font-semibold text-slate-500 dark:text-slate-400">Processing baseline comparisons...</span>
+    </div>
+
+    <!-- Application Controller Logic -->
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+    font-family: var(--font-body);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+}
+
+.dark .glass-panel {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.02);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -10px rgba(37, 99, 235, 0.15);
+}
+
+.dark .glass-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.2);
+}
+
+.dark .glass-card:hover {
+    box-shadow: 0 12px 24px -10px rgba(59, 130, 246, 0.3);
+}
+
+/* Animations */
+@keyframes slideInRight {
+    from {
+        transform: translateX(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.animate-slide-right {
+    animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+    animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-in {
+    animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-fade-out {
+    animation: fadeOut 0.25s ease-out forwards;
+}
+
+/* Custom Skeleton Loader */
+@keyframes skeleton-loading {
+    0% {
+        background-color: rgba(229, 231, 235, 0.6);
+    }
+    50% {
+        background-color: rgba(209, 213, 219, 0.8);
+    }
+    100% {
+        background-color: rgba(229, 231, 235, 0.6);
+    }
+}
+
+.dark .skeleton {
+    animation: skeleton-loading-dark 1.5s infinite ease-in-out;
+}
+
+@keyframes skeleton-loading-dark {
+    0% {
+        background-color: rgba(51, 65, 85, 0.6);
+    }
+    50% {
+        background-color: rgba(71, 85, 105, 0.8);
+    }
+    100% {
+        background-color: rgba(51, 65, 85, 0.6);
+    }
+}
+
+.skeleton {
+    animation: skeleton-loading 1.5s infinite ease-in-out;
+    border-radius: 0.375rem;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: rgba(71, 85, 105, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(71, 85, 105, 0.7);
+}
+
+/* Ripple Button Styling */
+.btn-ripple {
+    position: relative;
+    overflow: hidden;
+    transform: translate3d(0, 0, 0);
+}
+
+.btn-ripple:after {
+    content: "";
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    transform: scale(10, 10);
+    opacity: 0;
+    transition: transform .5s, opacity 1s;
+}
+
+.btn-ripple:active:after {
+    transform: scale(0, 0);
+    opacity: .3;
+    transition: 0s;
+}
+
+/* Scrollable Diff Box */
+.diff-code-box {
+    max-height: 240px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    overflow-y: auto;
+    border-radius: 0.5rem;
+}
+
+/* Status Pills */
+.status-pill-passed {
+    background-color: rgba(209, 250, 229, 0.8);
+    color: rgb(6, 95, 70);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.dark .status-pill-passed {
+    background-color: rgba(6, 78, 59, 0.4);
+    color: rgb(52, 211, 153);
+    border: 1px solid rgba(52, 211, 153, 0.1);
+}
+
+.status-pill-failed {
+    background-color: rgba(254, 226, 226, 0.8);
+    color: rgb(153, 27, 27);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.dark .status-pill-failed {
+    background-color: rgba(127, 29, 29, 0.4);
+    color: rgb(248, 113, 113);
+    border: 1px solid rgba(248, 113, 113, 0.1);
+}
+
+/* Force light colors on status pills when inside modals */
+#modal-failure-detail .status-pill-failed {
+    background-color: rgba(254, 226, 226, 0.8) !important;
+    color: rgb(153, 27, 27) !important;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Diff Viewer Panel Styles */
+.json-viewer-panel {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-y: auto;
+    max-height: 60vh;
+    tab-size: 2;
+}
+
+.diff-line-added {
+    background-color: rgba(34, 197, 94, 0.12);
+    border-left: 3px solid rgb(34, 197, 94);
+    padding-left: 6px;
+    margin-left: -3px;
+    display: inline-block;
+    width: 100%;
+}
+
+.diff-line-removed {
+    background-color: rgba(239, 68, 68, 0.12);
+    border-left: 3px solid rgb(239, 68, 68);
+    padding-left: 6px;
+    margin-left: -3px;
+    display: inline-block;
+    width: 100%;
+}
+
+.diff-line-changed {
+    background-color: rgba(245, 158, 11, 0.15);
+    border-left: 3px solid rgb(245, 158, 11);
+    padding-left: 6px;
+    margin-left: -3px;
+    display: inline-block;
+    width: 100%;
+}
+
+.diff-value-highlight {
+    background-color: rgba(245, 158, 11, 0.3);
+    border-radius: 2px;
+    padding: 0 2px;
+}
+
+/* Autocomplete Popup Styles */
+#var-autocomplete {
+    position: fixed;
+    z-index: 9999;
+    background: white;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    display: none;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.dark #var-autocomplete {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+.var-ac-header {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+
+.dark .var-ac-header {
+    background: #1e293b;
+    border-color: #334155;
+    color: #64748b;
+}
+
+.var-ac-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    color: #334155;
+}
+
+.dark .var-ac-item {
+    color: #cbd5e1;
+}
+
+.var-ac-item:hover, .var-ac-item.active {
+    background: #f1f5f9;
+}
+
+.dark .var-ac-item:hover, .dark .var-ac-item.active {
+    background: #1e293b;
+}
+
+.var-ac-pill {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.125rem 0.37rem;
+    border-radius: 0.25rem;
+    background: rgba(37, 99, 235, 0.1);
+    color: #2563eb;
+}
+
+.var-ac-name {
+    flex-grow: 1;
+    font-weight: 500;
+}
+
+.var-ac-hint {
+    font-size: 0.65rem;
+    color: #94a3b8;
+}
+
+.var-ac-empty {
+    padding: 0.75rem;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-style: italic;
+    text-align: center;
+}
+

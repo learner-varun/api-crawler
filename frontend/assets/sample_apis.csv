@@ -1,0 +1,4 @@
+name,endpoint
+Users API,https://jsonplaceholder.typicode.com/users
+Products API,https://jsonplaceholder.typicode.com/products
+Orders API,https://jsonplaceholder.typicode.com/orders
