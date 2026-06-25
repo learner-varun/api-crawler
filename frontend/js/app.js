@@ -518,29 +518,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Header Title section
         const header = `
-            <div class="flex items-start justify-between">
-                <div class="space-y-1.5">
-                    <h3 class="font-extrabold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+            <div class="flex items-start justify-between gap-4">
+                <div class="space-y-1.5 flex-1 min-w-0">
+                    <h3 class="font-extrabold text-lg text-slate-900 dark:text-white flex items-center gap-2 truncate">
                         ${env.environment_name}
-                        ${String(env.environment_id) === String(state.selectedEnvId) ? '<span class="text-[10px] bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-400 font-semibold px-2 py-0.5 rounded-md">Active</span>' : ''}
+                        ${String(env.environment_id) === String(state.selectedEnvId) ? '<span class="text-[10px] bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-400 font-semibold px-2 py-0.5 rounded-md whitespace-nowrap">Active</span>' : ''}
                     </h3>
-                    <div class="flex items-center gap-2.5">
-                        <span class="text-[11px] font-mono text-slate-400 dark:text-slate-500 break-all select-all">${env.base_url}</span>
-                        <span class="text-slate-300 dark:text-slate-700">|</span>
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Schedule</span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" class="sr-only peer" ${env.schedule_enabled !== false ? 'checked' : ''} onchange="toggleEnvSchedule(${env.environment_id}, this.checked)">
-                                <div class="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:bg-primary-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
-                            </label>
-                        </div>
-                    </div>
+                    <span class="text-[11px] font-mono text-slate-400 dark:text-slate-500 break-all select-all block">${env.base_url}</span>
                 </div>
-                <div class="text-right">
-                    <span class="text-[10px] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider block">Baseline Version</span>
-                    <span class="text-xs font-semibold text-slate-600 dark:text-slate-350">
-                        ${env.has_baseline ? `<i class="fa-solid fa-code-commit text-primary-500 mr-1"></i>${env.last_backup_version}` : '<span class="text-rose-500 dark:text-rose-400">No baseline backup</span>'}
-                    </span>
+                <div class="text-right flex flex-col items-end gap-1.5 shrink-0">
+                    <div>
+                        <span class="text-[10px] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider block">Baseline Version</span>
+                        <span class="text-xs font-semibold text-slate-600 dark:text-slate-350 whitespace-nowrap block">
+                            ${env.has_baseline ? `<i class="fa-solid fa-code-commit text-primary-500 mr-1"></i>${env.last_backup_version}` : '<span class="text-rose-500 dark:text-rose-400">No baseline backup</span>'}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Schedule</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" ${env.schedule_enabled !== false ? 'checked' : ''} onchange="toggleEnvSchedule(${env.environment_id}, this.checked)">
+                            <div class="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:bg-primary-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                        </label>
+                    </div>
                 </div>
             </div>
         `;
