@@ -110,7 +110,8 @@ def reschedule_all_jobs(db: Session, SessionLocal: sessionmaker):
                     CronTrigger(hour=hour, minute=minute),
                     args=[SessionLocal],
                     id=job_id,
-                    replace_existing=True
+                    replace_existing=True,
+                    misfire_grace_time=3600  # Run job if it was missed within the last 1 hour
                 )
                 logger.info(f"Successfully scheduled job '{card.name}' (ID: {card.id}) for daily execution at {hour:02d}:{minute:02d} (Time slot: {card.time})")
             except Exception as parse_err:

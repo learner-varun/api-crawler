@@ -104,6 +104,8 @@ class ComplexAPI(Base):
     curl_command = Column(Text, nullable=False)
     extract_rules = Column(JSON, nullable=True) # list of rules, e.g., [{"json_path": "data.token", "variable_key": "auth_token"}]
     assertions = Column(JSON, nullable=True) # list of assertions, e.g., [{"type": "status_code", "expected": 200}]
+    pre_request_script = Column(Text, nullable=True)  # Python script executed before the HTTP request
+    post_request_script = Column(Text, nullable=True)  # Python script executed after the HTTP request
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

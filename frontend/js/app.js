@@ -181,6 +181,8 @@ document.addEventListener("DOMContentLoaded", () => {
         inputCaEnv: document.getElementById("input-ca-env"),
         inputCaName: document.getElementById("input-ca-name"),
         inputCaCurl: document.getElementById("input-ca-curl"),
+        inputCaPreScript: document.getElementById("input-ca-pre-script"),
+        inputCaPostScript: document.getElementById("input-ca-post-script"),
         caExtractRulesContainer: document.getElementById("ca-extract-rules-container"),
         btnAddExtractRule: document.getElementById("btn-add-extract-rule"),
         caAssertionsContainer: document.getElementById("ca-assertions-container"),
@@ -1253,6 +1255,8 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.inputCaId.value = "";
         elements.inputCaName.value = "";
         elements.inputCaCurl.value = "";
+        elements.inputCaPreScript.value = "";
+        elements.inputCaPostScript.value = "";
         elements.caExtractRulesContainer.innerHTML = "";
         elements.caAssertionsContainer.innerHTML = "";
         elements.modalComplexApiTitle.innerText = "Add Complex API";
@@ -2329,6 +2333,8 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.inputCaId.value = "";
         elements.inputCaName.value = "";
         elements.inputCaCurl.value = "";
+        elements.inputCaPreScript.value = "";
+        elements.inputCaPostScript.value = "";
         elements.caExtractRulesContainer.innerHTML = "";
         elements.caAssertionsContainer.innerHTML = "";
         elements.modalComplexApiTitle.innerText = "Add Complex API";
@@ -2344,6 +2350,8 @@ document.addEventListener("DOMContentLoaded", () => {
         elements.inputCaId.value = api.id;
         elements.inputCaName.value = api.name;
         elements.inputCaCurl.value = api.curl_command;
+        elements.inputCaPreScript.value = api.pre_request_script || "";
+        elements.inputCaPostScript.value = api.post_request_script || "";
         elements.modalComplexApiTitle.innerText = "Edit Complex API";
         
         // Populate environments
@@ -2551,12 +2559,28 @@ ${escapeHTML(bodyStr)}`;
                     extractionsMsg = `<div class="mt-1 text-xs italic font-medium opacity-80">All assertions passed (if any) and no variables extracted.</div>`;
                 }
                 
+                let scriptLogsMsg = "";
+                if ((data.pre_script_logs && data.pre_script_logs.length > 0) || (data.post_script_logs && data.post_script_logs.length > 0)) {
+                    scriptLogsMsg = `<div class="mt-3 font-bold text-xs uppercase tracking-wide border-t border-current/20 pt-2">Script Logs:</div>`;
+                    if (data.pre_script_logs && data.pre_script_logs.length > 0) {
+                        scriptLogsMsg += `<div class="text-[10px] opacity-75 mt-1 font-semibold">Pre-Request:</div>` +
+                            `<ul class="list-disc pl-5 mt-0.5 space-y-0.5 text-xs font-mono opacity-90 select-text">` +
+                            data.pre_script_logs.map(log => `<li>${escapeHTML(log)}</li>`).join("") + `</ul>`;
+                    }
+                    if (data.post_script_logs && data.post_script_logs.length > 0) {
+                        scriptLogsMsg += `<div class="text-[10px] opacity-75 mt-1 font-semibold">Post-Request:</div>` +
+                            `<ul class="list-disc pl-5 mt-0.5 space-y-0.5 text-xs font-mono opacity-90 select-text">` +
+                            data.post_script_logs.map(log => `<li>${escapeHTML(log)}</li>`).join("") + `</ul>`;
+                    }
+                }
+                
                 runReasonBox.innerHTML = `
                     <div class="flex items-center gap-2 text-base">
                         <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400"></i>
                         <span>Execution Succeeded (Status Code: ${data.response ? data.response.status_code : 200})</span>
                     </div>
                     ${extractionsMsg}
+                    ${scriptLogsMsg}
                 `;
             } else {
                 runReasonBox.className = "p-4 rounded-xl border text-sm font-semibold select-all bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-300";
@@ -2571,6 +2595,21 @@ ${escapeHTML(bodyStr)}`;
                     failuresList = `<div class="mt-3 font-bold text-xs uppercase tracking-wide flex items-center gap-2"><i class="fa-solid fa-circle-exclamation text-rose-500"></i> Some assertions failed. View details below.</div>`;
                 }
                 
+                let scriptLogsMsg = "";
+                if ((data.pre_script_logs && data.pre_script_logs.length > 0) || (data.post_script_logs && data.post_script_logs.length > 0)) {
+                    scriptLogsMsg = `<div class="mt-3 font-bold text-xs uppercase tracking-wide border-t border-current/20 pt-2">Script Logs:</div>`;
+                    if (data.pre_script_logs && data.pre_script_logs.length > 0) {
+                        scriptLogsMsg += `<div class="text-[10px] opacity-75 mt-1 font-semibold">Pre-Request:</div>` +
+                            `<ul class="list-disc pl-5 mt-0.5 space-y-0.5 text-xs font-mono opacity-90 select-text">` +
+                            data.pre_script_logs.map(log => `<li>${escapeHTML(log)}</li>`).join("") + `</ul>`;
+                    }
+                    if (data.post_script_logs && data.post_script_logs.length > 0) {
+                        scriptLogsMsg += `<div class="text-[10px] opacity-75 mt-1 font-semibold">Post-Request:</div>` +
+                            `<ul class="list-disc pl-5 mt-0.5 space-y-0.5 text-xs font-mono opacity-90 select-text">` +
+                            data.post_script_logs.map(log => `<li>${escapeHTML(log)}</li>`).join("") + `</ul>`;
+                    }
+                }
+                
                 runReasonBox.innerHTML = `
                     <div class="flex items-center gap-2 text-base">
                         <i class="fa-solid fa-circle-xmark text-rose-600 dark:text-rose-450"></i>
@@ -2578,6 +2617,7 @@ ${escapeHTML(bodyStr)}`;
                     </div>
                     ${errorDetails}
                     ${failuresList}
+                    ${scriptLogsMsg}
                 `;
             }
             
@@ -2749,6 +2789,8 @@ ${escapeHTML(bodyStr)}`;
         const envId = elements.inputCaEnv.value;
         const name = elements.inputCaName.value.trim();
         const curl = elements.inputCaCurl.value.trim();
+        const preRequestScript = elements.inputCaPreScript.value.trim();
+        const postRequestScript = elements.inputCaPostScript.value.trim();
         
         if (!envId || !name || !curl) {
             showToast("Environment, Name, and Curl Command are required.", "warning");
@@ -2811,7 +2853,9 @@ ${escapeHTML(bodyStr)}`;
             name: name,
             curl_command: curl,
             extract_rules: rules.length > 0 ? rules : null,
-            assertions: assertions.length > 0 ? assertions : null
+            assertions: assertions.length > 0 ? assertions : null,
+            pre_request_script: preRequestScript || null,
+            post_request_script: postRequestScript || null
         };
 
         showOverlay("Saving complex API...");

@@ -28,7 +28,9 @@ def create_complex_api(api: ComplexAPICreate, db: Session = Depends(get_db)):
         name=api.name,
         curl_command=api.curl_command,
         extract_rules=rules,
-        assertions=assertions
+        assertions=assertions,
+        pre_request_script=api.pre_request_script,
+        post_request_script=api.post_request_script
     )
     db.add(new_api)
     db.commit()
@@ -53,6 +55,8 @@ def update_complex_api(api_id: int, api: ComplexAPIUpdate, db: Session = Depends
     existing.curl_command = api.curl_command
     existing.extract_rules = rules
     existing.assertions = assertions
+    existing.pre_request_script = api.pre_request_script
+    existing.post_request_script = api.post_request_script
     
     db.commit()
     db.refresh(existing)
@@ -87,6 +91,8 @@ def execute_complex_api(api_id: int, db: Session = Depends(get_db)):
     error_msg = None
     success = False
     extractions = []
+    pre_script_logs = []
+    post_script_logs = []
     
     try:
         try:
@@ -107,6 +113,10 @@ def execute_complex_api(api_id: int, db: Session = Depends(get_db)):
             raise pe
             
         res = execute_single_complex_api(db, api)
+        pre_script_logs = res.get("pre_script_logs", [])
+        post_script_logs = res.get("post_script_logs", [])
+        if "request" in res:
+            request_info = res["request"]
         
         raw_resp = res.get("raw_response")
         if raw_resp is not None:
@@ -144,5 +154,7 @@ def execute_complex_api(api_id: int, db: Session = Depends(get_db)):
         "response": response_info,
         "extractions": extractions,
         "assertions": api.assertions or [],
-        "failures": failures
+        "failures": failures,
+        "pre_script_logs": pre_script_logs,
+        "post_script_logs": post_script_logs
     }

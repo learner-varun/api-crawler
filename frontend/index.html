@@ -846,6 +846,24 @@
                     </div>
                 </div>
 
+                <div class="space-y-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide flex items-center justify-between">
+                            Pre-request Script
+                            <span class="text-[10px] lowercase text-slate-400 font-normal">prepare vars before cURL runs</span>
+                        </label>
+                        <textarea id="input-ca-pre-script" rows="7" placeholder="ctx['vars'].set('timestamp', int(time.time()))&#10;otp = ctx['db'].fetch_value(ctx['vars'].get('OTP_DB_PATH'), 'select code from otp_codes order by created_at desc limit 1')&#10;if not otp:&#10;    otp = ctx['email'].find_otp(ctx['vars'].get('IMAP_HOST'), ctx['vars'].get('EMAIL_USER'), ctx['vars'].get('EMAIL_PASSWORD'), sender='no-reply@example.com')&#10;ctx['vars'].set('otp_code', otp)&#10;ctx['log']('prepared OTP for {{otp_code}}')" class="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 font-mono transition-all resize-y"></textarea>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide flex items-center justify-between">
+                            Post-request Script
+                            <span class="text-[10px] lowercase text-slate-400 font-normal">read response and persist vars</span>
+                        </label>
+                        <textarea id="input-ca-post-script" rows="6" placeholder="body = ctx['response']['body']&#10;if ctx['response']['status_code'] == 200:&#10;    ctx['vars'].set('last_login_status', 'ok')&#10;    ctx['vars'].set('session_id', body.get('session_id'))&#10;ctx['log']('status: ' + str(ctx['response']['status_code']))" class="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 font-mono transition-all resize-y"></textarea>
+                    </div>
+                </div>
+
                 <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <div class="flex items-center justify-between">
                         <label class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Assertion Rules</label>
@@ -1003,11 +1021,76 @@
                         <li><b>Referencing Variables</b>: Inside any text field (URLs, cURL Commands, assertions), type <code class="font-mono text-primary-500 font-bold">{{</code> to open the dynamic autocomplete suggestions dropdown listing all available variables.</li>
                     </ul>
                 </div>
-                
-                <!-- Section 2: Extracting Keys -->
+
+                <!-- Section 2: Python Scripts -->
                 <div class="space-y-3 border-t border-slate-100 dark:border-slate-800 pt-4">
                     <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                         <span class="flex h-5 w-5 items-center justify-center rounded bg-primary-50 dark:bg-primary-950/40 text-[11px] font-bold text-primary-600 dark:text-primary-400">2</span>
+                        Pre/Post Python Scripts
+                    </h4>
+                    <p>Complex APIs can run Python before and after the cURL request. Use scripts to prepare dynamic values, fetch OTPs, inspect responses, and persist data back into global variables.</p>
+                    
+                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide block mt-2">Available API & Global Variables Helpers</span>
+                    <ul class="list-disc pl-5 space-y-1.5 text-xs">
+                        <li><code class="font-mono text-primary-500">vars['key'] = 'val'</code> or <code class="font-mono text-primary-500">set_var('key', 'val')</code> saves a global variable (reference as <code>{{key}}</code> in cURLs).</li>
+                        <li><code class="font-mono text-primary-500">vars['key']</code> or <code class="font-mono text-primary-500">get_var('key')</code> reads a global variable (falls back to env vars).</li>
+                        <li><code class="font-mono text-primary-500">env['key'] = 'val'</code> or <code class="font-mono text-primary-500">set_env('key', 'val')</code> sets an operating system environment variable.</li>
+                        <li><code class="font-mono text-primary-500">env['key']</code> or <code class="font-mono text-primary-500">get_env('key')</code> reads an operating system environment variable.</li>
+                        <li><code class="font-mono text-primary-500">print("log msg")</code> or <code class="font-mono text-primary-500">log("msg")</code> appends messages to script execution logs displayed in the UI.</li>
+                        <li><code class="font-mono text-primary-500">requests.get(url, headers)</code> makes HTTP calls directly (e.g. to third-party services).</li>
+                        <li><code class="font-mono text-primary-500">ctx['db'].fetch_value(sqlite_url, sql)</code> runs read-only SQLite queries for OTP/test-data lookup.</li>
+                        <li><code class="font-mono text-primary-500">ctx['email'].find_otp(...)</code> searches recent IMAP email and returns the first matching OTP.</li>
+                        <li><code class="font-mono text-primary-500">ctx['response']</code> is available in post-request scripts with <code>status_code</code>, <code>body</code>, and <code>headers</code>.</li>
+                    </ul>
+
+                    <!-- Script Examples -->
+                    <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-3 mt-3">
+                        <span class="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wide">Example A: Dynamic OTP Fetching (Pre-Request Script)</span>
+                        <p class="text-xs">Fetches the newest message dynamically from a free Mailsac email inbox using `requests` and saves it as a variable for the main cURL request:</p>
+                        <pre class="text-[11px] font-mono bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 overflow-x-auto text-slate-700 dark:text-slate-300">
+# Get email from variables
+email = vars.get("MY_EMAIL", "test-inbox@mailsac.com")
+
+# List messages for the email address
+res = requests.get(f"https://mailsac.com/api/addresses/{email}/messages")
+messages = res.json()
+
+if messages:
+    msg_id = messages[0]["_id"]
+    # Retrieve plaintext body of the newest email
+    body = requests.get(f"https://mailsac.com/api/text/{email}/{msg_id}").text
+    
+    # Extract 6-digit OTP using regex search
+    match = re.search(r"\b\d{6}\b", body)
+    if match:
+        otp = match.group(0)
+        vars["otp_code"] = otp
+        print(f"OTP extracted: {otp}")
+</pre>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-3 mt-2">
+                        <span class="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wide">Example B: Extracting and Printing ID (Post-Request Script)</span>
+                        <p class="text-xs">Inspects the live response of the current API call and logs the ID of the resource created:</p>
+                        <pre class="text-[11px] font-mono bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 overflow-x-auto text-slate-700 dark:text-slate-300">
+# Access response JSON
+body = ctx["response"]["body"]
+status = ctx["response"]["status_code"]
+
+if status == 201:
+    res_id = body.get("id")
+    print(f"Resource created successfully with ID: {res_id}")
+    vars["last_created_id"] = res_id
+else:
+    print(f"Failed to create resource, status: {status}")
+</pre>
+                    </div>
+                </div>
+                
+                <!-- Section 3: Extracting Keys -->
+                <div class="space-y-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+                    <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <span class="flex h-5 w-5 items-center justify-center rounded bg-primary-50 dark:bg-primary-950/40 text-[11px] font-bold text-primary-600 dark:text-primary-400">3</span>
                         How to Extract Keys (Dot-Notation JSONPath)
                     </h4>
                     <p>When executing Complex APIs, you can extract values from response JSON payloads and automatically save/overwrite global variables for subsequent runs using <b>dot-notation paths</b>.</p>

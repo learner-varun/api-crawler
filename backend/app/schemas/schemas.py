@@ -218,6 +218,8 @@ class ComplexAPIBase(BaseModel):
     curl_command: str = Field(..., description="Full curl command string")
     extract_rules: Optional[List[ComplexAPIExtractRule]] = None
     assertions: Optional[List[ComplexAPIAssertionRule]] = None
+    pre_request_script: Optional[str] = Field(None, description="Python script executed before the HTTP request")
+    post_request_script: Optional[str] = Field(None, description="Python script executed after the HTTP request")
 
 class ComplexAPICreate(ComplexAPIBase):
     pass

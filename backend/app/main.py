@@ -42,6 +42,24 @@ async def lifespan(app: FastAPI):
                     pass
                 else:
                     logger.error(f"Database migration warnings: {str(migration_error)}")
+
+            try:
+                conn.execute(text("ALTER TABLE complex_apis ADD COLUMN pre_request_script TEXT"))
+                logger.info("Database migration: Added 'pre_request_script' column to complex_apis table.")
+            except Exception as migration_error:
+                if "duplicate column name" in str(migration_error).lower() or "already exists" in str(migration_error).lower():
+                    pass
+                else:
+                    logger.error(f"Database migration warnings: {str(migration_error)}")
+
+            try:
+                conn.execute(text("ALTER TABLE complex_apis ADD COLUMN post_request_script TEXT"))
+                logger.info("Database migration: Added 'post_request_script' column to complex_apis table.")
+            except Exception as migration_error:
+                if "duplicate column name" in str(migration_error).lower() or "already exists" in str(migration_error).lower():
+                    pass
+                else:
+                    logger.error(f"Database migration warnings: {str(migration_error)}")
     except Exception as e:
         logger.critical(f"Database initialization failed: {str(e)}")
 
